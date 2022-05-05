@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, MongoCursorInUseError } = require('mongodb');
+const ObjectId = require('mongodb').ObjectId;
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
@@ -19,24 +20,48 @@ async function run() {
         await client.connect();
         const laptopCollection = client.db('Werehouse-Laptop').collection('laptop')
         app.get('/laptop', async (req, res) => {
+            console.log('query', req.query);
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
             const query = {};
             const cursor = laptopCollection.find(query);
-            const laptops = await cursor.toArray();
-            res.send(laptops)
+            let laptops;
+            if (page || size) {
+                laptops = await cursor.skip(page * size).limit(size).toArray();
+            }
+            else {
+                laptops = await cursor.toArray();
+            }
+
+            res.send(laptops);
             // Load Item
             app.get('/user', async (req, res) => {
                 const query = {}
                 const cursor = laptopCollection.find(query);
                 const users = await cursor.toArray();
                 res.send(users);
-            })
+            });
             // Post laptop (Add new laptop)
             app.post('/user', async (req, res) => {
                 const newUser = req.body;
                 console.log('new', newUser);
                 const result = await laptopCollection.insertOne(newUser);
                 res.send(result);
+            });
+            // paigination
+            app.get('/laptopcount', async (req, res) => {
+                // const query = {};
+                // const cursor = laptopCollection.find(query);
+                const count = await laptopCollection.estimatedDocumentCount();
+                res.send({ count });
             })
+        })
+        // delete laptop
+        app.delete('/user/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) }
+            const result = await laptopCollection.deleteOne(query);
+            res.send(result);
         })
     }
     finally {
