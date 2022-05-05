@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, MongoCursorInUseError } = require('mongodb');
 const ObjectId = require('mongodb').ObjectId;
 require('dotenv').config()
@@ -19,6 +20,18 @@ async function run() {
     try {
         await client.connect();
         const laptopCollection = client.db('Werehouse-Laptop').collection('laptop')
+
+        // JWT
+        app.post('/login', async (req, res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1y'
+            });
+            res.send({ accessToken });
+        })
+
+        // 
+
         app.get('/laptop', async (req, res) => {
             console.log('query', req.query);
             const page = parseInt(req.query.page);
