@@ -21,13 +21,29 @@ async function run() {
         await client.connect();
         const laptopCollection = client.db('Werehouse-Laptop').collection('laptop')
 
-        // JWT
+        // JWT Token 
         app.post('/login', async (req, res) => {
             const user = req.body;
             const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
                 expiresIn: '1y'
             });
             res.send({ accessToken });
+        })
+
+        // delevired product
+
+        app.put('/usre/:id', async (req, res) => {
+            const id = req.params.id
+            const updatedQuantity = req.body.updatedData
+            const filter = { _id: id }
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    quantity: updatedQuantity
+                }
+            }
+            const result = await productsCollection.updateOne(filter, updatedDoc, options)
+            res.send(result)
         })
 
         // 
@@ -47,21 +63,27 @@ async function run() {
             }
 
             res.send(laptops);
+
             // Load Item
+
             app.get('/user', async (req, res) => {
                 const query = {}
                 const cursor = laptopCollection.find(query);
                 const users = await cursor.toArray();
                 res.send(users);
             });
+
             // Post laptop (Add new laptop)
+
             app.post('/user', async (req, res) => {
                 const newUser = req.body;
                 console.log('new', newUser);
                 const result = await laptopCollection.insertOne(newUser);
                 res.send(result);
             });
+
             // paigination
+
             app.get('/laptopcount', async (req, res) => {
                 // const query = {};
                 // const cursor = laptopCollection.find(query);
@@ -69,7 +91,9 @@ async function run() {
                 res.send({ count });
             })
         })
+
         // delete laptop
+
         app.delete('/user/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) }
@@ -78,7 +102,6 @@ async function run() {
         })
     }
     finally {
-
     }
 }
 run().catch(console.dir)
